@@ -3,9 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let todosLosImeis = [];
     let activeBajas = [];
     const cliente = JSON.parse(localStorage.getItem('cliente'));
-    let html5QrcodeScanner;
+    let html5QrCode; // Usaremos la clase base para más control
     let cameras = [];
-    let currentCameraIndex = 0;
+    let currentCameraId;
 
     // --- Elementos del DOM ---
     const welcomeMsg = document.querySelector('#welcome-header h2');
@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const manualImeiInput = document.getElementById('manual-imei-input');
     const manualImeiBtn = document.getElementById('manual-imei-btn');
     const switchCameraBtn = document.getElementById('switch-camera-btn');
+    const readerElement = document.getElementById('reader');
 
     if (!cliente) {
         window.location.href = '/login.html';
@@ -24,49 +25,200 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     welcomeMsg.textContent = `${cliente.nombre_negocio} (${cliente.codigo_sap})`;
 
-    // --- Lógica de la Cámara ---
-    const startScanner = (cameraId) => {
-        const config = { 
-            fps: 10, 
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 }),
-        };
-        
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
-        
-        // Prioriza la cámara trasera si no se especifica un ID
-        const cameraConfig = cameraId 
-            ? { deviceId: { exact: cameraId } } 
-            : { facingMode: "environment" };
-
-        html5QrcodeScanner.render(
-            onScanSuccess, 
-            (error) => { /* Ignorar errores comunes de escaneo */ }
-        );
+    // --- LÓGICA DE CÁMARA ROBUSTA ---
+    const stopCurrentScanner = async () => {
+        if (html5QrCode && html5QrCode.isScanning) {
+            try {
+                await html5QrCode.stop();
+            } catch (err) {
+                console.error("Error menor al detener el escáner, se puede ignorar:", err);
+            }
+        }
+         try {
+            // Limpieza manual del DOM para evitar el error 'removeChild'
+            readerElement.innerHTML = '';
+        } catch (e) {}
     };
 
-    const setupCameras = async () => {
+    const startScanner = async (cameraId) => {
+        await stopCurrentScanner();
+        
+        const config = {
+            fps: 10,
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 })
+        };
+        
+        // La librería necesita el elemento del DOM cada vez que se inicia
+        html5QrCode = new Html5Qrcode("reader");
+
         try {
-            cameras = await Html5Qrcode.getCameras();
-            if (cameras && cameras.length > 1) {
-                switchCameraBtn.style.display = 'flex';
-            }
+            await html5QrCode.start(
+                cameraId,
+                config,
+                onScanSuccess,
+                (errorMessage) => { /* Ignorar errores continuos de escaneo */ }
+            );
         } catch (err) {
-            console.error("Error al obtener cámaras:", err);
+            console.error("Error al iniciar la cámara:", err);
+            Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
         }
     };
 
+    const initializeCamera = async () => {
+        try {
+            cameras = await Html5Qrcode.getCameras();
+            if (cameras && cameras.length) {
+                // Busca activamente la cámara trasera
+                const rearCamera = cameras.find(camera => camera.label.toLowerCase().includes('back') || camera.label.toLowerCase().includes('rear') || camera.label.toLowerCase().includes('trasera'));
+                
+                if (cameras.length > 1) {
+                    switchCameraBtn.style.display = 'flex';
+                }
+
+                if (rearCamera) {
+                    currentCameraId = rearCamera.id;
+                } else {
+                    currentCameraId = cameras[0].id; // Si no la encuentra, usa la primera de la lista
+                }
+                
+                startScanner(currentCameraId);
+            } else {
+                 Swal.fire('Sin Cámaras', 'No se encontraron cámaras en este dispositivo.', 'error');
+            }
+        } catch (err) {
+            console.error("Fallo al obtener cámaras:", err);
+            Swal.fire('Error de Permisos', 'No se pudo acceder a las cámaras. Por favor, concede los permisos necesarios.', 'error');
+        }
+    };
+    
     switchCameraBtn.addEventListener('click', () => {
-        if (cameras.length > 1 && html5QrcodeScanner) {
-            html5QrcodeScanner.clear().then(() => {
-                currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
-                const newCameraId = cameras[currentCameraIndex].id;
-                startScanner(newCameraId);
-            }).catch(err => {
-                console.error("Error al cambiar de cámara:", err);
-            });
+        if (cameras.length > 1) {
+            const currentIndex = cameras.findIndex(c => c.id === currentCameraId);
+            const nextIndex = (currentIndex + 1) % cameras.length;
+            currentCameraId = cameras[nextIndex].id;
+            startScanner(currentCameraId);
         }
     });
 
+
+    // --- El resto de tus funciones (sin cambios) ---
+    const actualizarLista = () => { /* ...tu código... */ };
+    const eliminarImei = async (index) => { /* ...tu código... */ };
+    imeiList.addEventListener('click', (event) => { /* ...tu código... */ });
+    const generarPDF = (registros) => { /* ...tu código... */ };
+    const generarExcel = async (registros) => { /* ...tu código... */ };
+    
+    const procesarNuevoImei = (imei) => {
+        if (!/^\d{15}$/.test(imei)) return;
+        
+        const bajaId = bajasSelect.value;
+        const modeloId = modelosSelect.value;
+        
+        if (!bajaId || !modeloId) {
+            return Swal.fire({ icon: 'warning', title: '¡Atención!', text: 'Selecciona una campaña y un modelo.' });
+        }
+        
+        if (todosLosImeis.some(item => item.imei === imei)) {
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'warning',
+                title: 'IMEI duplicado', showConfirmButton: false, timer: 2000, timerProgressBar: true,
+            });
+            return;
+        }
+
+        const baja = activeBajas.find(b => b.id == bajaId);
+        const modelo = baja.modelos.find(m => m.id == modeloId);
+        
+        todosLosImeis.push({
+            imei: imei, modelo_id: parseInt(modeloId), modelo_nombre: modelo.nombre_modelo,
+            baja_id: parseInt(bajaId), baja_nombre: baja.nombre_baja
+        });
+
+        Swal.fire({ 
+            icon: 'success', title: '¡IMEI Añadido!', text: imei, 
+            timer: 1500, showConfirmButton: false, position: 'top' 
+        });
+
+        actualizarLista();
+    };
+    
+    const onScanSuccess = (decodedText, decodedResult) => {
+        // La lógica de pausa/reanudación ya no es necesaria con este enfoque
+        procesarNuevoImei(decodedText);
+    };
+
+    bajasSelect.addEventListener('change', () => {
+        const selectedBajaId = bajasSelect.value;
+        modelosSelect.innerHTML = '<option value="">Selecciona un modelo</option>';
+        modelosSelect.disabled = true;
+        if (selectedBajaId) {
+            const baja = activeBajas.find(b => b.id == selectedBajaId);
+            if (baja && baja.modelos && baja.modelos.length > 0) {
+                modelosSelect.innerHTML += baja.modelos.map(m => `<option value="${m.id}">${m.nombre_modelo}</option>`).join('');
+                modelosSelect.disabled = false;
+            } else {
+                 modelosSelect.innerHTML = '<option value="">No hay modelos en esta campaña</option>';
+            }
+        }
+    });
+
+    manualImeiBtn.addEventListener('click', () => {
+        const imeiValue = manualImeiInput.value.trim();
+        if (imeiValue) {
+            procesarNuevoImei(imeiValue);
+            manualImeiInput.value = '';
+            manualImeiInput.focus();
+        }
+    });
+
+    manualImeiInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            manualImeiBtn.click();
+        }
+    });
+
+    const handleDownloadChoice = async (imeisEnviados) => { /* ...tu código... */ };
+
+    submitBtn.addEventListener('click', async () => { /* ...tu código... */ });
+
+    window.addEventListener('beforeunload', (event) => {
+        if (todosLosImeis.length > 0) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    });
+    
+    // --- Carga Inicial de Datos ---
+    (async () => {
+        await Swal.fire({
+            title: '¡Bienvenido!',
+            text: 'Para escanear los IMEIs, necesitarás permitir el acceso a tu cámara.',
+            icon: 'info',
+            confirmButtonText: 'Entendido'
+        });
+        
+        await initializeCamera(); // Nueva función de inicialización
+
+        try {
+            const res = await fetch('/api/bajas/activas');
+            const data = await res.json();
+            if (data.ok && data.bajas.length > 0) {
+                activeBajas = data.bajas;
+                bajasSelect.innerHTML = '<option value="">Selecciona una campaña</option>' + activeBajas.map(b => `<option value="${b.id}">${b.nombre_baja}</option>`).join('');
+            } else {
+                bajasSelect.innerHTML = '<option value="">No hay campañas activas</option>';
+                modelosSelect.disabled = true;
+            }
+        } catch (err) {
+            bajasSelect.innerHTML = '<option value="">Error al cargar campañas</option>';
+            modelosSelect.disabled = true;
+        }
+        actualizarLista();
+    })();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
     // --- Funciones de Renderizado y UI ---
     const actualizarLista = () => {
         imeiList.innerHTML = '';
