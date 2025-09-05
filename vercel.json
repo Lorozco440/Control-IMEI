@@ -2,22 +2,19 @@
     "version": 2,
     "builds": [
         {
-            "src": "dist/index.js",
+            "src": "src/index.ts",
             "use": "@vercel/node"
-        },
-        {
-            "src": "public/**",
-            "use": "@vercel/static"
         }
     ],
     "rewrites": [
         {
-            "source": "/api/(.*)",
-            "destination": "/dist/index.js"
+            "source": "/public/(.*)",
+            "destination": "/public/$1"
         },
         {
-            "source": "/((?!api/).*)",
-            "destination": "/public/$1"
+            "source": "/(.*)",
+            "destination": "/src/index.ts"
         }
     ]
 }
+
