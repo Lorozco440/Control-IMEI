@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>Panel de Administración</h1>
+        <button id="logout-btn">Cerrar Sesión</button>
+    </header>
+
+    <main class="container">
+        <!-- Sección para Gestionar Campañas -->
+        <section class="card">
+            <h2>Gestionar Campañas de Bajas</h2>
+            <div class="form-container">
+                <input type="text" id="new-baja-name" placeholder="Nombre de la campaña">
+                <input type="date" id="new-baja-date">
+                <button id="add-baja-btn">Crear Campaña</button>
+            </div>
+            <table id="bajas-table">
+                <thead>
+                    <tr>
+                        <th>Campaña</th>
+                        <th>Fecha</th>
+                        <th>Modelos Asignados</th>
+                        <th>Estado</th>
+                        <th>Activar/Desactivar</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <!-- Sección de Modelos -->
+        <section class="card">
+            <h2>Maestro de Modelos</h2>
+            <div class="form-container">
+                <input type="text" id="new-model-name" placeholder="Nombre del nuevo modelo">
+                <button id="add-model-btn">Añadir Modelo</button>
+            </div>
+            <table id="modelos-maestro-table">
+                <thead>
+                    <tr>
+                        <th>Nombre del Modelo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <!-- Sección de Clientes Simplificada -->
+        <section class="card">
+            <h2>Añadir Nuevo Cliente</h2>
+            <div class="form-container">
+                <input type="text" id="new-client-sap" placeholder="Código SAP (ej: ZAC0000)">
+                <input type="text" id="new-client-name" placeholder="Nombre del Negocio">
+                <button id="add-client-btn">Añadir Cliente</button>
+                <a href="clientes.html" class="action-btn view-btn">Ver Clientes</a>
+            </div>
+        </section>
+
+        <!-- Sección de Historial con Filtros -->
+        <section class="card">
+            <div class="header-registros">
+                <h2>Historial de Registros</h2>
+                <button id="export-excel-btn">Exportar a Excel</button>
+            </div>
+            <div class="filters-container">
+                <select id="filter-baja"></select>
+                <input type="text" id="search-input" placeholder="Buscar por IMEI, Cliente, SAP...">
+                <button id="filter-btn">Filtrar</button>
+            </div>
+            <table id="registros-table">
+                <thead>
+                    <tr>
+                        <th>Fecha Reporte</th>
+                        <th>Campaña</th>
+                        <th>Cliente</th>
+                        <th>Código SAP</th>
+                        <th>Modelo</th>
+                        <th>IMEI</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div class="pagination-container">
+                <button id="prev-page-btn" disabled>Anterior</button>
+                <span id="page-info">Página 1 de 1</span>
+                <button id="next-page-btn" disabled>Siguiente</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="admin.js"></script>
+</body>
+
+</html>
+

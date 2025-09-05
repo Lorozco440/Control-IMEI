@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Clientes - Bajas de Precio</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f2f5;
+        }
+
+        .login-box {
+            padding: 40px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        input {
+            font-size: 1.2em;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            font-size: 1.2em;
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-box">
+        <h2>Registro de IMEIs</h2>
+        <form id="loginForm">
+            <input type="text" id="codigo_sap" placeholder="Tu Código SAP" required>
+            <br>
+            <button type="submit">Ingresar</button>
+        </form>
+        <p id="error-msg" class="error"></p>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const codigo_sap = document.getElementById('codigo_sap').value.toUpperCase();
+            const errorMsg = document.getElementById('error-msg');
+            errorMsg.textContent = '';
+
+            try {
+                const res = await fetch('/api/clientes/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigo_sap })
+                });
+
+                const data = await res.json();
+
+                if (data.ok) {
+                    // Guardamos los datos del cliente y lo redirigimos
+                    localStorage.setItem('cliente', JSON.stringify(data.cliente));
+                    window.location.href = '/scanner.html';
+                } else {
+                    errorMsg.textContent = 'Error: ' + data.error;
+                }
+            } catch (err) {
+                errorMsg.textContent = 'No se pudo conectar con el servidor.';
+            }
+        });
+    </sCRIPT>
+</body>
+
+</html>

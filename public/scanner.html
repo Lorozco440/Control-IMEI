@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escaner de IMEI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header id="welcome-header">
+        <h2 style="margin:0;">Cargando...</h2>
+    </header>
+
+    <main class="container">
+        <h3>1. Selecciona la Campaña y el Modelo</h3>
+        <div class="select-container">
+            <select id="bajas-select">
+                <option value="">Cargando campañas...</option>
+            </select>
+            <select id="modelos-select" disabled>
+                <option value="">Selecciona una campaña primero</option>
+            </select>
+        </div>
+
+        <h3>2. Escanea o Ingresa el IMEI</h3>
+        <div id="reader"></div>
+        
+        <!-- INICIO: Nueva sección para entrada manual -->
+        <div id="manual-entry-container">
+            <input type="text" id="manual-imei-input" placeholder="O ingresa el IMEI manualmente" maxlength="15" inputmode="numeric">
+            <button id="manual-imei-btn">Añadir</button>
+        </div>
+        <!-- FIN: Nueva sección para entrada manual -->
+        
+        <h3>3. IMEIs Registrados (<span id="imei-count">0</span>)</h3>
+        <ul id="imeis-list"></ul>
+    </main>
+
+    <footer class="footer">
+        <button id="submit-btn" disabled>Enviar Registros</button>
+    </footer>
+
+    <!-- Librerías -->
+    <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionar Clientes</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Gestionar Clientes</h1>
+        <a href="index.html" class="back-btn">Regresar al Panel Principal</a>
+    </header>
+    <main class="container">
+        <section class="card">
+            <table id="clientes-table">
+                <thead>
+                    <tr>
+                        <th>Código SAP</th>
+                        <th>Nombre del Negocio</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Los clientes se cargarán aquí dinámicamente -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="clientes.js"></script>
+</body>
+</html>

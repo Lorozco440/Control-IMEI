@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Debug API</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 32px; }
+    button { padding: 8px 14px; border: 0; border-radius: 8px; cursor: pointer; }
+    .row { display: flex; gap: 12px; margin-bottom: 16px; }
+    pre { background: #111; color: #0f0; padding: 12px; border-radius: 8px; overflow:auto; }
+  </style>
+</head>
+<body>
+  <h1>Backend OK</h1>
+  <div class="row">
+    <button onclick="hit('/api/healthz')">/api/healthz</button>
+    <button onclick="hit('/api/db/ping')">/api/db/ping</button>
+  </div>
+  <pre id="out">{ pulsa un botón }</pre>
+  <script>
+    async function hit(path){
+      const res = await fetch(path, { cache: 'no-store' });
+      const txt = await res.text();
+      out.textContent = txt;
+    }
+  </script>
+</body>
+</html>
