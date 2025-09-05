@@ -192,14 +192,26 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- Lógica Principal de Procesamiento ---
-    const procesarNuevoImei = (imei) => {
-        if (!/^\d{15}$/.test(imei)) return;
+    const procesarNuevoImei = (imei, isManual = false) => {
+        // --- INICIO: Corrección de validación manual ---
+        if (!/^\d{15}$/.test(imei)) {
+            if (isManual) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'IMEI Inválido',
+                    text: 'El IMEI debe contener exactamente 15 dígitos numéricos.',
+                });
+            }
+            return false; // Retorna false si no es válido
+        }
+        // --- FIN: Corrección de validación manual ---
         
         const bajaId = bajasSelect.value;
         const modeloId = modelosSelect.value;
         
         if (!bajaId || !modeloId) {
-            return Swal.fire({ icon: 'warning', title: '¡Atención!', text: 'Selecciona una campaña y un modelo.' });
+            Swal.fire({ icon: 'warning', title: '¡Atención!', text: 'Selecciona una campaña y un modelo.' });
+            return false;
         }
         
         if (todosLosImeis.some(item => item.imei === imei)) {
@@ -207,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 toast: true, position: 'top-end', icon: 'warning',
                 title: 'IMEI duplicado', showConfirmButton: false, timer: 2000, timerProgressBar: true,
             });
-            return;
+            return false;
         }
 
         const baja = activeBajas.find(b => b.id == bajaId);
@@ -224,18 +236,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         actualizarLista();
+        return true; // Retorna true si fue exitoso
     };
     
     const onScanSuccess = (decodedText, decodedResult) => {
-        // --- INICIO: Lógica de "Enfriamiento" ---
         const now = Date.now();
-        if (now - lastScanTime < 2000) { // 2000 milisegundos = 2 segundos
-            return; // Ignora el escaneo si es demasiado rápido
+        if (now - lastScanTime < 2000) {
+            return;
         }
-        lastScanTime = now; // Actualiza el tiempo del último escaneo válido
-        // --- FIN: Lógica de "Enfriamiento" ---
-
-        procesarNuevoImei(decodedText);
+        lastScanTime = now;
+        procesarNuevoImei(decodedText, false); // isManual es false para escaneos
     };
 
     bajasSelect.addEventListener('change', () => {
@@ -256,9 +266,13 @@ document.addEventListener('DOMContentLoaded', () => {
     manualImeiBtn.addEventListener('click', () => {
         const imeiValue = manualImeiInput.value.trim();
         if (imeiValue) {
-            procesarNuevoImei(imeiValue);
-            manualImeiInput.value = '';
-            manualImeiInput.focus();
+            // --- INICIO: Corrección del listener del botón manual ---
+            const success = procesarNuevoImei(imeiValue, true); // isManual es true
+            if (success) {
+                manualImeiInput.value = '';
+                manualImeiInput.focus();
+            }
+            // --- FIN: Corrección del listener del botón manual ---
         }
     });
 
@@ -326,12 +340,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- INICIO: Corrección del listener beforeunload ---
+    // Este código es el estándar y correcto. El navegador mostrará un diálogo genérico por seguridad.
     window.addEventListener('beforeunload', (event) => {
         if (todosLosImeis.length > 0) {
             event.preventDefault();
+            // Requerido por algunos navegadores.
             event.returnValue = '';
+            return '';
         }
     });
+    // --- FIN: Corrección del listener beforeunload ---
     
     // --- Carga Inicial de Datos ---
     (async () => {
