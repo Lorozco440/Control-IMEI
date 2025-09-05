@@ -3,9 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let todosLosImeis = [];
     let activeBajas = [];
     const cliente = JSON.parse(localStorage.getItem('cliente'));
-    let html5QrCode; // Usaremos la clase base para más control
+    let html5QrCode;
     let cameras = [];
     let currentCameraId;
+    let lastScanTime = 0; // Variable para controlar el tiempo entre escaneos
 
     // --- Elementos del DOM ---
     const welcomeMsg = document.querySelector('#welcome-header h2');
@@ -25,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     welcomeMsg.textContent = `${cliente.nombre_negocio} (${cliente.codigo_sap})`;
 
-    // --- LÓGICA DE CÁMARA ROBUSTA ---
+    // --- Lógica de Cámara Robusta ---
     const stopCurrentScanner = async () => {
         if (html5QrCode && html5QrCode.isScanning) {
             try {
@@ -226,6 +227,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     const onScanSuccess = (decodedText, decodedResult) => {
+        // --- INICIO: Lógica de "Enfriamiento" ---
+        const now = Date.now();
+        if (now - lastScanTime < 2000) { // 2000 milisegundos = 2 segundos
+            return; // Ignora el escaneo si es demasiado rápido
+        }
+        lastScanTime = now; // Actualiza el tiempo del último escaneo válido
+        // --- FIN: Lógica de "Enfriamiento" ---
+
         procesarNuevoImei(decodedText);
     };
 
