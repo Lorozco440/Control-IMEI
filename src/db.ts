@@ -1,21 +1,8 @@
 import { Pool } from 'pg'
-import dns from 'node:dns'
 
 const { DATABASE_URL } = process.env
 if (!DATABASE_URL) {
   throw new Error('DATABASE_URL faltante en .env')
-}
-
-let host = ''
-try {
-  host = new URL(DATABASE_URL).hostname
-  console.log('DB host:', host)
-  dns.lookup(host, (err, addr) => {
-    if (err) console.error('DNS lookup failed:', err)
-    else console.log('DNS OK ->', addr)
-  })
-} catch {
-  console.error('DATABASE_URL inválida')
 }
 
 export const pool = new Pool({
@@ -23,7 +10,7 @@ export const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 })
 
-pool.on('error', (err) => {
+pool.on('error', (err: Error) => { // <-- CORRECCIÓN AQUÍ
   console.error('DB pool error:', err)
 })
 
