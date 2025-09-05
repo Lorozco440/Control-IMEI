@@ -24,14 +24,21 @@
         </div>
 
         <h3>2. Escanea o Ingresa el IMEI</h3>
-        <div id="reader"></div>
         
-        <!-- INICIO: Nueva sección para entrada manual -->
+        <!-- INICIO: Contenedor para el lector y el botón de cambio -->
+        <div id="reader-container">
+            <div id="reader"></div>
+            <button id="switch-camera-btn" style="display: none;">
+                <!-- Icono SVG para cambiar cámara -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+            </button>
+        </div>
+        <!-- FIN: Contenedor -->
+        
         <div id="manual-entry-container">
             <input type="text" id="manual-imei-input" placeholder="O ingresa el IMEI manualmente" maxlength="15" inputmode="numeric">
             <button id="manual-imei-btn">Añadir</button>
         </div>
-        <!-- FIN: Nueva sección para entrada manual -->
         
         <h3>3. IMEIs Registrados (<span id="imei-count">0</span>)</h3>
         <ul id="imeis-list"></ul>
@@ -49,3 +56,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+

@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let todosLosImeis = [];
     let activeBajas = [];
     const cliente = JSON.parse(localStorage.getItem('cliente'));
+    let html5QrcodeScanner;
+    let cameras = [];
+    let currentCameraIndex = 0;
 
     // --- Elementos del DOM ---
     const welcomeMsg = document.querySelector('#welcome-header h2');
@@ -13,12 +16,56 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = document.getElementById('submit-btn');
     const manualImeiInput = document.getElementById('manual-imei-input');
     const manualImeiBtn = document.getElementById('manual-imei-btn');
+    const switchCameraBtn = document.getElementById('switch-camera-btn');
 
     if (!cliente) {
         window.location.href = '/login.html';
         return;
     }
     welcomeMsg.textContent = `${cliente.nombre_negocio} (${cliente.codigo_sap})`;
+
+    // --- Lógica de la Cámara ---
+    const startScanner = (cameraId) => {
+        const config = { 
+            fps: 10, 
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 }),
+        };
+        
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
+        
+        // Prioriza la cámara trasera si no se especifica un ID
+        const cameraConfig = cameraId 
+            ? { deviceId: { exact: cameraId } } 
+            : { facingMode: "environment" };
+
+        html5QrcodeScanner.render(
+            onScanSuccess, 
+            (error) => { /* Ignorar errores comunes de escaneo */ }
+        );
+    };
+
+    const setupCameras = async () => {
+        try {
+            cameras = await Html5Qrcode.getCameras();
+            if (cameras && cameras.length > 1) {
+                switchCameraBtn.style.display = 'flex';
+            }
+        } catch (err) {
+            console.error("Error al obtener cámaras:", err);
+        }
+    };
+
+    switchCameraBtn.addEventListener('click', () => {
+        if (cameras.length > 1 && html5QrcodeScanner) {
+            html5QrcodeScanner.clear().then(() => {
+                currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
+                const newCameraId = cameras[currentCameraIndex].id;
+                startScanner(newCameraId);
+            }).catch(err => {
+                console.error("Error al cambiar de cámara:", err);
+            });
+        }
+    });
 
     // --- Funciones de Renderizado y UI ---
     const actualizarLista = () => {
@@ -46,14 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const eliminarImei = async (index) => {
         const imeiParaBorrar = todosLosImeis[index];
         const result = await Swal.fire({
-            title: '¿Estás seguro?',
-            text: `¿Deseas eliminar el IMEI: ${imeiParaBorrar.imei}?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, ¡bórralo!',
-            cancelButtonText: 'Cancelar'
+            title: '¿Estás seguro?', text: `¿Deseas eliminar el IMEI: ${imeiParaBorrar.imei}?`, icon: 'warning',
+            showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, ¡bórralo!', cancelButtonText: 'Cancelar'
         });
 
         if (result.isConfirmed) {
@@ -134,54 +176,47 @@ document.addEventListener('DOMContentLoaded', () => {
         link.click();
     };
 
-    // --- Lógica Principal ---
+    // --- Lógica Principal de Procesamiento ---
     const procesarNuevoImei = (imei) => {
-        if (!/^\d{15}$/.test(imei)) {
-            return;
-        }
+        if (!/^\d{15}$/.test(imei)) return;
+        
         const bajaId = bajasSelect.value;
         const modeloId = modelosSelect.value;
+        
         if (!bajaId || !modeloId) {
             return Swal.fire({ icon: 'warning', title: '¡Atención!', text: 'Selecciona una campaña y un modelo.' });
         }
+        
         if (todosLosImeis.some(item => item.imei === imei)) {
             Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'warning',
-                title: 'IMEI duplicado',
-                showConfirmButton: false,
-                timer: 2000,
-                timerProgressBar: true,
+                toast: true, position: 'top-end', icon: 'warning',
+                title: 'IMEI duplicado', showConfirmButton: false, timer: 2000, timerProgressBar: true,
             });
             return;
         }
+
         const baja = activeBajas.find(b => b.id == bajaId);
         const modelo = baja.modelos.find(m => m.id == modeloId);
+        
         todosLosImeis.push({
-            imei: imei,
-            modelo_id: parseInt(modeloId),
-            modelo_nombre: modelo.nombre_modelo,
-            baja_id: parseInt(bajaId),
-            baja_nombre: baja.nombre_baja
+            imei: imei, modelo_id: parseInt(modeloId), modelo_nombre: modelo.nombre_modelo,
+            baja_id: parseInt(bajaId), baja_nombre: baja.nombre_baja
         });
         
-        // --- INICIO: LÓGICA DE PAUSA/REANUDACIÓN CORREGIDA ---
-        html5QrcodeScanner.pause(); // Simplemente pausamos sin argumentos.
+        if (html5QrcodeScanner.getState() === 2) { // 2 es SCANNING
+            html5QrcodeScanner.pause();
+        }
+        
         Swal.fire({ 
-            icon: 'success', 
-            title: '¡IMEI Añadido!', 
-            text: imei, 
-            timer: 1500, 
-            showConfirmButton: false, 
-            position: 'top' 
+            icon: 'success', title: '¡IMEI Añadido!', text: imei, 
+            timer: 1500, showConfirmButton: false, position: 'top' 
         }).then(() => {
-            // Después de la alerta, esperamos un breve momento y reanudamos.
             setTimeout(() => {
-                html5QrcodeScanner.resume();
+                 if (html5QrcodeScanner.getState() === 3) { // 3 es PAUSED
+                    html5QrcodeScanner.resume();
+                }
             }, 500); 
         });
-        // --- FIN: LÓGICA DE PAUSA/REANUDACIÓN CORREGIDA ---
 
         actualizarLista();
     };
@@ -189,13 +224,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const onScanSuccess = (decodedText) => {
         procesarNuevoImei(decodedText);
     };
-    
-    const html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-        fps: 10, 
-        qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 })
-    });
 
-    // --- Event Listeners (LÓGICA COMPLETA RESTAURADA) ---
+    // --- Event Listeners (Formularios y Botones) ---
     bajasSelect.addEventListener('change', () => {
         const selectedBajaId = bajasSelect.value;
         modelosSelect.innerHTML = '<option value="">Selecciona un modelo</option>';
@@ -254,9 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.textContent = 'Enviando...';
 
         const registrosAgrupados = todosLosImeis.reduce((acc, curr) => {
-            if (!acc[curr.baja_id]) {
-                acc[curr.baja_id] = [];
-            }
+            if (!acc[curr.baja_id]) acc[curr.baja_id] = [];
             acc[curr.baja_id].push({ modelo_id: curr.modelo_id, imei: curr.imei });
             return acc;
         }, {});
@@ -272,9 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         baja_id: parseInt(baja_id)
                     })
                 });
-                 if (!res.ok) {
-                    throw new Error('Falló el envío al servidor.');
-                }
+                 if (!res.ok) throw new Error('Falló el envío al servidor.');
             }
             const imeisEnviados = [...todosLosImeis];
             todosLosImeis = [];
@@ -283,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'Error de Conexión', text: 'No se pudieron enviar los registros.' });
         } finally {
-            submitBtn.disabled = true; // Se mantiene deshabilitado hasta que haya nuevos IMEIs
+            submitBtn.disabled = true;
             submitBtn.textContent = 'Enviar Registros';
         }
     });
@@ -295,16 +321,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Carga inicial de datos
+    // --- Carga Inicial de Datos ---
     (async () => {
-        Swal.fire({
+        await Swal.fire({
             title: '¡Bienvenido!',
             text: 'Para escanear los IMEIs, necesitarás permitir el acceso a tu cámara.',
             icon: 'info',
             confirmButtonText: 'Entendido'
-        }).then(() => {
-            html5QrcodeScanner.render(onScanSuccess, (error) => {});
         });
+        
+        startScanner();
+        await setupCameras();
+
         try {
             const res = await fetch('/api/bajas/activas');
             const data = await res.json();
