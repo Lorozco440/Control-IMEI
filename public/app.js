@@ -19,12 +19,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const manualImeiBtn = document.getElementById('manual-imei-btn');
     const switchCameraBtn = document.getElementById('switch-camera-btn');
     const readerElement = document.getElementById('reader');
+    const changeClientBtn = document.getElementById('change-client-btn');
+    const logoutBtn = document.getElementById('logout-btn');
 
     if (!cliente) {
         window.location.href = '/login.html';
         return;
     }
     welcomeMsg.textContent = `${cliente.nombre_negocio} (${cliente.codigo_sap})`;
+
+    changeClientBtn.addEventListener('click', () => {
+    localStorage.removeItem('cliente'); // Limpia la sesión actual
+    window.location.href = '/login.html'; //lleva a la página de login
+});
+    logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('cliente');
+        window.location.href = '/login.html';
+    });
 
     // --- Lógica de Cámara Robusta ---
     const stopCurrentScanner = async () => {
