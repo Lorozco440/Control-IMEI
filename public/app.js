@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Lógica de Cámara Robusta ---
+    // --- Lógica de Cámara Robusta ---
     const stopCurrentScanner = async () => {
         if (html5QrCode && html5QrCode.isScanning) {
             try {
@@ -51,52 +52,58 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
     };
 
-   const startScanner = async (cameraId) => {
+    // MODIFICADO: Se elimina facingMode para permitir la conmutación de cámaras
+    const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         
-        // --- SOLUCIÓN: FORZAR CÁMARA TRASERA Y ELIMINAR ENFOQUE CONTINUO ---
         const config = {
             fps: 10,
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.20 }), // Caja de escaneo adaptativa
+            // Usamos el valor reducido que funcionó para la altura de la caja
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), 
             videoConstraints: {
-                // 1. FORZAR CÁMARA TRASERA: Usamos la restricción estricta de ambiente ('environment').
-                // Esto anulará cualquier cámara frontal seleccionada por error.
-                facingMode: { exact: "environment" },
+                // Se eliminó 'facingMode' y 'focusMode' para permitir al navegador
+                // elegir la cámara por ID y usar su mejor enfoque nativo.
                 
-                // 2. RESOLUCIÓN: Establecemos resolución ideal para mantener la calidad de escaneo.
+                // RESOLUCIÓN IDEAL para mantener la calidad de escaneo
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
-                
-                // 3. ENFOQUE: Hemos ELIMINADO la restricción 'focusMode' para permitir que el
-                // enfoque automático nativo del dispositivo (macro) funcione correctamente al acercar.
             }
         };
 
         html5QrCode = new Html5Qrcode("reader");
         try {
-            // El cameraId (ID del dispositivo) se pasa aquí para seleccionar la cámara.
+            // html5QrCode.start() utiliza el cameraId para seleccionar el dispositivo
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
             console.error("Error al iniciar la cámara:", err);
             
             if (String(err).includes('OverconstrainedError')) {
-                // Si aún falla por Overconstrained, es probable que la resolución sea el problema.
                  Swal.fire('Atención', 'El dispositivo no soporta la resolución de cámara solicitada. Intenta reiniciar la aplicación o utiliza la entrada manual.', 'error');
             } else {
                  Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
             }
         }
     };
+
+    // MODIFICADO: Lógica de inicialización para establecer el ID de la cámara trasera
+    // sin forzarlo en el config de startScanner.
     const initializeCamera = async () => {
         try {
             cameras = await Html5Qrcode.getCameras();
             if (cameras && cameras.length) {
+                // Priorizar la cámara trasera para el inicio
                 const rearCamera = cameras.find(camera => camera.label.toLowerCase().includes('back') || camera.label.toLowerCase().includes('rear') || camera.label.toLowerCase().includes('trasera'));
+
                 if (cameras.length > 1) {
                     switchCameraBtn.style.display = 'flex';
                 }
+                
+                // Selecciona el ID de la cámara trasera si se encuentra, de lo contrario, la primera.
                 currentCameraId = rearCamera ? rearCamera.id : cameras[0].id;
+                
+                // Inicia el escáner con el ID de la cámara trasera.
                 startScanner(currentCameraId);
+
             } else {
                 Swal.fire('Sin Cámaras', 'No se encontraron cámaras en este dispositivo.', 'error');
             }
@@ -106,13 +113,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
+    // LISTENER CORREGIDO: Lógica de conmutación (sin cambios, ya que funcionaba, 
+    // pero ahora startScanner ya no tiene la restricción).
     switchCameraBtn.addEventListener('click', () => {
         if (cameras.length > 1) {
             const currentIndex = cameras.findIndex(c => c.id === currentCameraId);
             const nextIndex = (currentIndex + 1) % cameras.length;
             currentCameraId = cameras[nextIndex].id;
-            startScanner(currentCameraId);
+            // El scanner se reinicia con el ID de la siguiente cámara
+            startScanner(currentCameraId); 
         }
+    });
+    
     });
 
     // --- Funciones de Renderizado y UI ---
