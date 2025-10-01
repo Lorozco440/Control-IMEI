@@ -51,27 +51,34 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
     };
 
-   const startScanner = async (cameraId) => {
+   // lorozco440/control-imei/Control-IMEI-d7d3f0b4a4ec21a312b288eb89eae09a589d9c43/public/app.js (Modificación en startScanner)
+
+    const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         
-        // --- SOLUCIÓN: FORZAR CÁMARA TRASERA Y ELIMINAR ENFOQUE CONTINUO ---
+        // --- CORRECCIÓN CRÍTICA: ELIMINAR RESTRICCIONES DE RESOLUCIÓN ---
         const config = {
             fps: 10,
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), // Caja de escaneo adaptativa
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), // Mantenemos la caja de escaneo pequeña
             videoConstraints: {
-                // 1. FORZAR CÁMARA TRASERA: Usamos la restricción estricta de ambiente ('environment').
-                // Esto anulará cualquier cámara frontal seleccionada por error.
+                // CLAVE: Usamos la restricción estricta de ambiente para forzar la cámara trasera,
+                // pero ya no pedimos resoluciones fijas para evitar el OverconstrainedError.
                 facingMode: { exact: "environment" },
                 
-                // 2. RESOLUCIÓN: Establecemos resolución ideal para mantener la calidad de escaneo.
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                
-                // 3. ENFOQUE: Hemos ELIMINADO la restricción 'focusMode' para permitir que el
-                // enfoque automático nativo del dispositivo (macro) funcione correctamente al acercar.
+                // ¡IMPORTANTE! Se eliminan las líneas de width/height ideal para resolver el fallo
+                // El navegador usará la mejor resolución disponible por defecto.
             }
         };
 
+        html5QrCode = new Html5Qrcode("reader");
+        try {
+            await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
+        } catch (err) {
+            console.error("Error al iniciar la cámara:", err);
+            // Mensaje de error simplificado
+            Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Por favor, utiliza la entrada manual.', 'error');
+        }
+    };
         html5QrCode = new Html5Qrcode("reader");
         try {
             // El cameraId (ID del dispositivo) se pasa aquí para seleccionar la cámara.
