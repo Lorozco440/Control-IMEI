@@ -51,32 +51,35 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
     };
 
-    const startScanner = async (cameraId) => {
+   const startScanner = async (cameraId) => {
         await stopCurrentScanner();
-         // --- INICIO: SOLUCIÓN PARA ENFOQUE Y VELOCIDAD ---
+        
+        // Configuración robusta para mejorar la compatibilidad y mantener el enfoque continuo
         const config = {
             fps: 10,
             qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 }),
-            // Configuración clave: optimizar la experiencia de escaneo en móviles
+            // **CORRECCIÓN CLAVE:** Usamos deviceId para forzar la cámara sin conflicto 
+            // con las propiedades avanzadas, solucionando el problema de inicialización.
             videoConstraints: {
-                // Preferir la cámara trasera/ambiente
-                facingMode: { exact: cameraId }, 
-                // Sugerir un modo de enfoque continuo para códigos cercanos (si el dispositivo lo soporta)
+                deviceId: { exact: cameraId },
                 advanced: [{ 
-                    zoom: 1.0, 
-                    focusMode: "continuous",
-                    // Puedes experimentar con 'torch' (linterna) aquí si lo necesitas:
-                    torch: true 
+                    // Mantenemos el enfoque continuo para la mejora del escaneo
+                    focusMode: "continuous" 
                 }]
             }
         };
-        // --- FIN: SOLUCIÓN PARA ENFOQUE Y VELOCIDAD ---
+
         html5QrCode = new Html5Qrcode("reader");
         try {
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
             console.error("Error al iniciar la cámara:", err);
-            Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
+            // Manejo de errores más específico para ayudar al usuario
+            if (String(err).includes('OverconstrainedError') || String(err).includes('NotAllowedError')) {
+                 Swal.fire('Error de Permisos', 'La configuración avanzada de la cámara falló. Asegúrate de que tu navegador/dispositivo soporte "Enfoque Continuo". Si el problema persiste, intenta reiniciar la aplicación.', 'error');
+            } else {
+                 Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
+            }
         }
     };
 
