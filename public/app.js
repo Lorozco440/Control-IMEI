@@ -54,31 +54,38 @@ document.addEventListener('DOMContentLoaded', () => {
    const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         
-        // Configuración robusta para mejorar la compatibilidad y mantener el enfoque continuo
+        // --- SOLUCIÓN DEFINITIVA PARA CÁMARA TRASERA Y ENFOQUE CERCANO ---
         const config = {
             fps: 10,
             qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 }),
-            // **CORRECCIÓN CLAVE:** Usamos deviceId para forzar la cámara sin conflicto 
-            // con las propiedades avanzadas, solucionando el problema de inicialización.
             videoConstraints: {
-                deviceId: { exact: cameraId },
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
+                // 1. FORZAR CÁMARA TRASERA: Esta restricción obliga a usar la cámara trasera principal.
+                // Es la manera más confiable para seleccionar la cámara trasera.
                 facingMode: "environment",
-                 focusMode: "continuous",
+                
+                // 2. ENFOQUE Y RESOLUCIÓN: Usamos el bloque 'advanced' para solicitar 
+                // el enfoque continuo y una buena calidad de imagen.
+                advanced: [{
+                    // Resolución ideal alta para mejor calidad de imagen
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    // Solicitamos el enfoque continuo, esencial para códigos de barras cercanos
+                    focusMode: "continuous" 
+                }]
+                // NOTA: Se elimina 'deviceId' para evitar el conflicto de restricciones.
             }
         };
 
         html5QrCode = new Html5Qrcode("reader");
         try {
-            // El cameraId (ID del dispositivo) se pasa aquí para seleccionar la cámara.
+            // Pasamos el ID de la cámara, pero el objeto 'config' lo forzará a ser trasera.
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
             console.error("Error al iniciar la cámara:", err);
-            // Mantenemos el manejo de errores mejorado para diagnóstico
-            if (String(err).includes('OverconstrainedError') || String(err).includes('NotAllowedError')) {
-                // Este error ocurre si el dispositivo no soporta 'focusMode: "continuous"'
-                 Swal.fire('Error de Permisos', 'La configuración avanzada de la cámara falló. Asegúrate de que tu navegador/dispositivo soporte "Enfoque Continuo". Si el problema persiste, intenta reiniciar la aplicación.', 'error');
+            
+            if (String(err).includes('OverconstrainedError')) {
+                // Si falla por restricción (ej: el dispositivo no soporta 1280x720 o el focusMode)
+                 Swal.fire('Atención', 'El dispositivo no soporta la configuración de cámara solicitada (resolución/enfoque). Intenta reiniciar la aplicación o utiliza la entrada manual.', 'error');
             } else {
                  Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
             }
