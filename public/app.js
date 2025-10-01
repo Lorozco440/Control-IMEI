@@ -38,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Lógica de Cámara Robusta ---
-    // --- Lógica de Cámara Robusta ---
     const stopCurrentScanner = async () => {
         if (html5QrCode && html5QrCode.isScanning) {
             try {
@@ -52,27 +51,28 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
     };
 
-    // MODIFICADO: Se elimina facingMode para permitir la conmutación de cámaras
-    const startScanner = async (cameraId) => {
+   const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         
+        // --- CORRECCIÓN: ELIMINAR LA RESTRICCIÓN FACINGMODE ---
         const config = {
             fps: 10,
-            // Usamos el valor reducido que funcionó para la altura de la caja
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), 
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }),
             videoConstraints: {
-                // Se eliminó 'facingMode' y 'focusMode' para permitir al navegador
-                // elegir la cámara por ID y usar su mejor enfoque nativo.
+                // ELIMINAMOS facingMode: { exact: "environment" } para permitir que
+                // el botón de cambio de cámara seleccione cualquier ID de cámara.
                 
-                // RESOLUCIÓN IDEAL para mantener la calidad de escaneo
+                // RESOLUCIÓN (Mantenemos la calidad de escaneo)
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
             }
         };
+        // --- FIN DE LA CORRECCIÓN ---
 
         html5QrCode = new Html5Qrcode("reader");
         try {
-            // html5QrCode.start() utiliza el cameraId para seleccionar el dispositivo
+            // html5QrCode.start() ahora usará el cameraId (ID del dispositivo) 
+            // que le pasemos para seleccionar la cámara.
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
             console.error("Error al iniciar la cámara:", err);
@@ -84,26 +84,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
-
-    // MODIFICADO: Lógica de inicialización para establecer el ID de la cámara trasera
-    // sin forzarlo en el config de startScanner.
     const initializeCamera = async () => {
         try {
             cameras = await Html5Qrcode.getCameras();
             if (cameras && cameras.length) {
-                // Priorizar la cámara trasera para el inicio
                 const rearCamera = cameras.find(camera => camera.label.toLowerCase().includes('back') || camera.label.toLowerCase().includes('rear') || camera.label.toLowerCase().includes('trasera'));
-
                 if (cameras.length > 1) {
                     switchCameraBtn.style.display = 'flex';
                 }
-                
-                // Selecciona el ID de la cámara trasera si se encuentra, de lo contrario, la primera.
                 currentCameraId = rearCamera ? rearCamera.id : cameras[0].id;
-                
-                // Inicia el escáner con el ID de la cámara trasera.
                 startScanner(currentCameraId);
-
             } else {
                 Swal.fire('Sin Cámaras', 'No se encontraron cámaras en este dispositivo.', 'error');
             }
@@ -113,18 +103,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // LISTENER CORREGIDO: Lógica de conmutación (sin cambios, ya que funcionaba, 
-    // pero ahora startScanner ya no tiene la restricción).
     switchCameraBtn.addEventListener('click', () => {
         if (cameras.length > 1) {
             const currentIndex = cameras.findIndex(c => c.id === currentCameraId);
             const nextIndex = (currentIndex + 1) % cameras.length;
             currentCameraId = cameras[nextIndex].id;
-            // El scanner se reinicia con el ID de la siguiente cámara
-            startScanner(currentCameraId); 
+            startScanner(currentCameraId);
         }
-    });
-    
     });
 
     // --- Funciones de Renderizado y UI ---
