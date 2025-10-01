@@ -55,36 +55,32 @@ document.addEventListener('DOMContentLoaded', () => {
         await stopCurrentScanner();
         
         // --- SOLUCIÓN: FORZAR CÁMARA TRASERA Y ELIMINAR ENFOQUE CONTINUO ---
+       const startScanner = async (cameraId) => {
+        await stopCurrentScanner();
+        
+        // --- CONFIGURACIÓN DE MÁXIMA ESTABILIDAD ---
         const config = {
             fps: 10,
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), // Caja de escaneo adaptativa
+            // Mantenemos la altura reducida
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), 
             videoConstraints: {
-                // 1. FORZAR CÁMARA TRASERA: Usamos la restricción estricta de ambiente ('environment').
-                // Esto anulará cualquier cámara frontal seleccionada por error.
-                facingMode: { exact: "environment" },
+                // CLAVE: Usamos el ID de la cámara directamente. Esto habilita el botón de cambio
+                // y es la forma más estable de solicitar una cámara específica.
+                deviceId: cameraId,
                 
-                // 2. RESOLUCIÓN: Establecemos resolución ideal para mantener la calidad de escaneo.
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                
-                // 3. ENFOQUE: Hemos ELIMINADO la restricción 'focusMode' para permitir que el
-                // enfoque automático nativo del dispositivo (macro) funcione correctamente al acercar.
+                // ¡IMPORTANTE! Eliminamos TODAS las restricciones de resolución (width, height, facingMode) 
+                // para que el navegador use la configuración por defecto más estable (que arregló el enfoque) 
+                // y evite el error de "restricción excesiva".
             }
         };
 
         html5QrCode = new Html5Qrcode("reader");
         try {
-            // El cameraId (ID del dispositivo) se pasa aquí para seleccionar la cámara.
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
+            // Manejo de errores simple y NO bloqueante para que la app cargue
             console.error("Error al iniciar la cámara:", err);
-            
-            if (String(err).includes('OverconstrainedError')) {
-                // Si aún falla por Overconstrained, es probable que la resolución sea el problema.
-                 Swal.fire('Atención', 'El dispositivo no soporta la resolución de cámara solicitada. Intenta reiniciar la aplicación o utiliza la entrada manual.', 'error');
-            } else {
-                 Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
-            }
+            Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Por favor, utiliza la entrada manual.', 'error');
         }
     };
     const initializeCamera = async () => {
