@@ -51,67 +51,60 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
     };
 
-  const startScanner = async (cameraId) => {
+   const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         
-        // --- SOLUCIÓN DE ESTABILIDAD Y HABILITAR CAMBIO DE CÁMARA ---
+        // --- SOLUCIÓN: FORZAR CÁMARA TRASERA Y ELIMINAR ENFOQUE CONTINUO ---
         const config = {
             fps: 10,
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), 
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), // Caja de escaneo adaptativa
             videoConstraints: {
-                // CORRECCIÓN CRÍTICA: Usamos el ID de la cámara directamente (más estable).
-                // Esto elimina el error de "restricción excesiva" (OverconstrainedError) 
-                // y permite la conmutación de cámaras.
-                deviceId: cameraId, 
+                // 1. FORZAR CÁMARA TRASERA: Usamos la restricción estricta de ambiente ('environment').
+                // Esto anulará cualquier cámara frontal seleccionada por error.
+                facingMode: { exact: "environment" },
                 
-                // Mantenemos la resolución ideal para la calidad de escaneo
+                // 2. RESOLUCIÓN: Establecemos resolución ideal para mantener la calidad de escaneo.
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
                 
-                // Eliminamos facingMode y focusMode para el mejor enfoque nativo.
+                // 3. ENFOQUE: Hemos ELIMINADO la restricción 'focusMode' para permitir que el
+                // enfoque automático nativo del dispositivo (macro) funcione correctamente al acercar.
             }
         };
 
         html5QrCode = new Html5Qrcode("reader");
         try {
+            // El cameraId (ID del dispositivo) se pasa aquí para seleccionar la cámara.
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
-            // Manejo de errores simple y NO bloqueante
             console.error("Error al iniciar la cámara:", err);
-            Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Esto puede ser por falta de permisos o un conflicto de resolución. Por favor, utiliza la entrada manual.', 'error');
+            
+            if (String(err).includes('OverconstrainedError')) {
+                // Si aún falla por Overconstrained, es probable que la resolución sea el problema.
+                 Swal.fire('Atención', 'El dispositivo no soporta la resolución de cámara solicitada. Intenta reiniciar la aplicación o utiliza la entrada manual.', 'error');
+            } else {
+                 Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
+            }
         }
     };
-(async () => {
-        // 1. Cargar Campañas y Modelos (CRÍTICO: Esto debe ser lo primero)
+    const initializeCamera = async () => {
         try {
-            const res = await fetch('/api/bajas/activas');
-            const data = await res.json();
-            if (data.ok && data.bajas.length > 0) {
-                activeBajas = data.bajas;
-                bajasSelect.innerHTML = '<option value="">Selecciona una campaña</option>' + activeBajas.map(b => `<option value="${b.id}">${b.nombre_baja}</option>`).join('');
+            cameras = await Html5Qrcode.getCameras();
+            if (cameras && cameras.length) {
+                const rearCamera = cameras.find(camera => camera.label.toLowerCase().includes('back') || camera.label.toLowerCase().includes('rear') || camera.label.toLowerCase().includes('trasera'));
+                if (cameras.length > 1) {
+                    switchCameraBtn.style.display = 'flex';
+                }
+                currentCameraId = rearCamera ? rearCamera.id : cameras[0].id;
+                startScanner(currentCameraId);
             } else {
-                bajasSelect.innerHTML = '<option value="">No hay campañas activas</option>';
-                modelosSelect.disabled = true;
+                Swal.fire('Sin Cámaras', 'No se encontraron cámaras en este dispositivo.', 'error');
             }
         } catch (err) {
-            bajasSelect.innerHTML = '<option value="">Error al cargar campañas</option>';
-            modelosSelect.disabled = true;
+            console.error("Fallo al obtener cámaras:", err);
+            Swal.fire('Error de Permisos', 'No se pudo acceder a las cámaras. Por favor, concede los permisos necesarios.', 'error');
         }
-
-        // 2. Mostrar Alerta de Bienvenida/Permisos (Después de que los datos están listos)
-        await Swal.fire({
-            title: '¡Bienvenido!',
-            text: 'Para escanear los IMEIs, necesitarás permitir el acceso a tu cámara.',
-            icon: 'info',
-            confirmButtonText: 'Entendido'
-        });
-        
-        // 3. Inicializar Cámara (El error aquí ya no bloqueará la carga de datos)
-        await initializeCamera();
-
-        actualizarLista();
-    })();
-});
+    };
     
     switchCameraBtn.addEventListener('click', () => {
         if (cameras.length > 1) {
