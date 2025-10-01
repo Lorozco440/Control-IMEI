@@ -61,6 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // **CORRECCIÓN CLAVE:** Usamos deviceId para forzar la cámara sin conflicto 
             // con las propiedades avanzadas, solucionando el problema de inicialización.
             videoConstraints: {
+                deviceId: { exact: cameraId },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: "environment",
                  focusMode: "continuous",
             }
         };
