@@ -94,19 +94,26 @@ h3 {
 }
 
 /* --- INICIO: Estilos para el contenedor del lector --- */
+/* --- INICIO: Estilos para el contenedor del lector --- */
 #reader-container {
     position: relative;
     width: 100%;
     max-width: 500px;
     margin: 0 auto;
+    /* --- CAMBIO CLAVE: Reducir la altura máxima del contenedor del video --- */
+    max-height: 150px; /* Pruebe con 350px. El valor original era implícitamente más alto. */
+    overflow: hidden; /* Oculta cualquier exceso si el video es más grande */
 }
 
 #reader {
     width: 100%;
+    /* Altura automática: El video se ajustará al ancho de 100% y a la max-height del contenedor */
+    height: 100%; 
     border: 2px solid var(--border-color);
     border-radius: 8px;
     overflow: hidden;
 }
+/* --- FIN: Estilos para el contenedor del lector --- */
 
 #switch-camera-btn {
     position: absolute;
