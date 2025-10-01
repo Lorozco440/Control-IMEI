@@ -94,6 +94,7 @@ h3 {
 }
 
 /* --- INICIO: Estilos para el contenedor del lector --- */
+/* --- INICIO: Estilos para el contenedor del lector --- */
 #reader-container {
     position: relative;
     width: 100%;
@@ -129,7 +130,6 @@ h3 {
     background-color: rgba(0, 0, 0, 0.7);
 }
 /* --- FIN: Estilos para el contenedor del lector --- */
-
 
 #manual-entry-container {
     display: flex;

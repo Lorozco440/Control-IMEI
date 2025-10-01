@@ -51,38 +51,21 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
     };
 
-   const startScanner = async (cameraId) => {
+    const startScanner = async (cameraId) => {
         await stopCurrentScanner();
-        
-        // --- SOLUCIÓN: FORZAR CÁMARA TRASERA Y ELIMINAR ENFOQUE CONTINUO ---
-       const startScanner = async (cameraId) => {
-        await stopCurrentScanner();
-        
-        // --- CONFIGURACIÓN DE MÁXIMA ESTABILIDAD ---
         const config = {
             fps: 10,
-            // Mantenemos la altura reducida
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), 
-            videoConstraints: {
-                // CLAVE: Usamos el ID de la cámara directamente. Esto habilita el botón de cambio
-                // y es la forma más estable de solicitar una cámara específica.
-                deviceId: cameraId,
-                
-                // ¡IMPORTANTE! Eliminamos TODAS las restricciones de resolución (width, height, facingMode) 
-                // para que el navegador use la configuración por defecto más estable (que arregló el enfoque) 
-                // y evite el error de "restricción excesiva".
-            }
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 })
         };
-
         html5QrCode = new Html5Qrcode("reader");
         try {
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
-            // Manejo de errores simple y NO bloqueante para que la app cargue
             console.error("Error al iniciar la cámara:", err);
-            Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Por favor, utiliza la entrada manual.', 'error');
+            Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
         }
     };
+
     const initializeCamera = async () => {
         try {
             cameras = await Html5Qrcode.getCameras();
@@ -408,4 +391,3 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarLista();
     })();
 });
-
