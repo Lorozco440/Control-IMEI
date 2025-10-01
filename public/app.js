@@ -51,28 +51,27 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
     };
 
-   const startScanner = async (cameraId) => {
+  const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         
-        // --- CORRECCIÓN: ELIMINAR LA RESTRICCIÓN FACINGMODE ---
+        // --- MODIFICACIÓN CLAVE: Se reduce el 0.35 a 0.25 para disminuir la altura de la caja ---
         const config = {
             fps: 10,
             qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }),
             videoConstraints: {
-                // ELIMINAMOS facingMode: { exact: "environment" } para permitir que
-                // el botón de cambio de cámara seleccione cualquier ID de cámara.
+                // FORZAR CÁMARA TRASERA
+                facingMode: { exact: "environment" },
                 
-                // RESOLUCIÓN (Mantenemos la calidad de escaneo)
+                // RESOLUCIÓN
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
+                
+                // ENFOQUE: Eliminado para usar el enfoque nativo.
             }
         };
-        // --- FIN DE LA CORRECCIÓN ---
 
         html5QrCode = new Html5Qrcode("reader");
         try {
-            // html5QrCode.start() ahora usará el cameraId (ID del dispositivo) 
-            // que le pasemos para seleccionar la cámara.
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
             console.error("Error al iniciar la cámara:", err);
