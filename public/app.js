@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- SOLUCIÓN: FORZAR CÁMARA TRASERA Y ELIMINAR ENFOQUE CONTINUO ---
         const config = {
             fps: 10,
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 }),
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.20 }), // Caja de escaneo adaptativa
             videoConstraints: {
                 // 1. FORZAR CÁMARA TRASERA: Usamos la restricción estricta de ambiente ('environment').
                 // Esto anulará cualquier cámara frontal seleccionada por error.
