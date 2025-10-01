@@ -51,15 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
     };
 
-   const startScanner = async (cameraId) => {
+    const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         const config = {
             fps: 10,
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 }),
-            videoConstraints: {
-                // SUGERENCIA MÍNIMA: Priorizar la cámara trasera para mejor calidad nativa
-                facingMode: "environment"
-            }
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 })
         };
         html5QrCode = new Html5Qrcode("reader");
         try {
