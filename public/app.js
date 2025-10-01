@@ -50,31 +50,24 @@ document.addEventListener('DOMContentLoaded', () => {
             readerElement.innerHTML = '';
         } catch (e) {}
     };
-const startScanner = async (constraints) => { // constraints puede ser un ID o { facingMode: 'environment' }
+
+   const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         
+        // Configuración robusta para mejorar la compatibilidad y mantener el enfoque continuo
         const config = {
             fps: 10,
             qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 }),
-            // Intentamos activar el enfoque continuo siempre que sea posible.
+            // **CORRECCIÓN CLAVE:** Usamos deviceId para forzar la cámara sin conflicto 
+            // con las propiedades avanzadas, solucionando el problema de inicialización.
             videoConstraints: {
-                ...constraints, // Esto puede ser { deviceId: { exact: id } } o { facingMode: 'environment' }
+                deviceId: { exact: cameraId },
                 advanced: [{ 
-                    focusMode: "continuous"
+                    // Mantenemos el enfoque continuo para la mejora del escaneo
+                    focusMode: "continuous" 
                 }]
             }
         };
-
-        html5QrCode = new Html5Qrcode("reader");
-        try {
-            // Pasamos las constraints a html5QrCode.start()
-            await html5QrCode.start(constraints, config, onScanSuccess, (errorMessage) => {});
-        } catch (err) {
-            console.error("Error al iniciar la cámara:", err);
-            // Manejo de errores simplificado. La lógica principal de fallback está en initializeCamera.
-            Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara o aplicar la configuración de enfoque. Asegúrate de haber dado los permisos.', 'error');
-        }
-    };
 
         html5QrCode = new Html5Qrcode("reader");
         try {
@@ -95,26 +88,11 @@ const startScanner = async (constraints) => { // constraints puede ser un ID o {
             cameras = await Html5Qrcode.getCameras();
             if (cameras && cameras.length) {
                 const rearCamera = cameras.find(camera => camera.label.toLowerCase().includes('back') || camera.label.toLowerCase().includes('rear') || camera.label.toLowerCase().includes('trasera'));
-                
                 if (cameras.length > 1) {
                     switchCameraBtn.style.display = 'flex';
                 }
-                
-                // 1. Opcion de "Mejor Esfuerzo": Intenta con la restricción genérica de cámara trasera
-                const environmentConstraint = { facingMode: 'environment' };
-                currentCameraId = rearCamera ? rearCamera.id : cameras[0].id; // Mantenemos el ID para el switch
-
-                try {
-                    // Intenta iniciar con la restricción genérica (más propensa a activar el enfoque)
-                    await startScanner(environmentConstraint); 
-                    return;
-                } catch (e) {
-                    console.warn("Fallo la restriccion generica de ambiente. Intentando con ID especifico:", e);
-                }
-                
-                // 2. Fallback: Si la restricción genérica falló, usa el ID específico (el método anterior)
-                await startScanner(currentCameraId);
-
+                currentCameraId = rearCamera ? rearCamera.id : cameras[0].id;
+                startScanner(currentCameraId);
             } else {
                 Swal.fire('Sin Cámaras', 'No se encontraron cámaras en este dispositivo.', 'error');
             }
@@ -129,9 +107,7 @@ const startScanner = async (constraints) => { // constraints puede ser un ID o {
             const currentIndex = cameras.findIndex(c => c.id === currentCameraId);
             const nextIndex = (currentIndex + 1) % cameras.length;
             currentCameraId = cameras[nextIndex].id;
-            
-            // Cuando se cambia la cámara manualmente, siempre usamos el ID específico.
-            startScanner(currentCameraId); 
+            startScanner(currentCameraId);
         }
     });
 
