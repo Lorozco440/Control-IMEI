@@ -101,7 +101,7 @@ h3 {
     max-width: 500px;
     margin: 0 auto;
     /* --- CAMBIO CLAVE: Reducir la altura máxima del contenedor del video --- */
-    max-height: 150px; /* Pruebe con 350px. El valor original era implícitamente más alto. */
+    max-height: 350px; /* Pruebe con 350px. El valor original era implícitamente más alto. */
     overflow: hidden; /* Oculta cualquier exceso si el video es más grande */
 }
 
