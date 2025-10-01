@@ -53,10 +53,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const startScanner = async (cameraId) => {
         await stopCurrentScanner();
+         // --- INICIO: SOLUCIÓN PARA ENFOQUE Y VELOCIDAD ---
         const config = {
             fps: 10,
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 })
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.35 }),
+            // Configuración clave: optimizar la experiencia de escaneo en móviles
+            videoConstraints: {
+                // Preferir la cámara trasera/ambiente
+                facingMode: { exact: cameraId }, 
+                // Sugerir un modo de enfoque continuo para códigos cercanos (si el dispositivo lo soporta)
+                advanced: [{ 
+                    zoom: 1.0, 
+                    focusMode: "continuous",
+                    // Puedes experimentar con 'torch' (linterna) aquí si lo necesitas:
+                    torch: true 
+                }]
+            }
         };
+        // --- FIN: SOLUCIÓN PARA ENFOQUE Y VELOCIDAD ---
         html5QrCode = new Html5Qrcode("reader");
         try {
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
