@@ -51,37 +51,42 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
     };
 
-   // lorozco440/control-imei/Control-IMEI-d7d3f0b4a4ec21a312b288eb89eae09a589d9c43/public/app.js (Modificación en startScanner)
-
-    // lorozco440/control-imei/Control-IMEI-d7d3f0b4a4ec21a312b288eb89eae09a589d9c43/public/app.js (Modificación en startScanner)
-
-    const startScanner = async (cameraId) => {
+   const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         
-        // --- CORRECCIÓN CRÍTICA: ELIMINAR RESTRICCIONES DE RESOLUCIÓN ---
+        // --- SOLUCIÓN: FORZAR CÁMARA TRASERA Y ELIMINAR ENFOQUE CONTINUO ---
         const config = {
             fps: 10,
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), // Mantenemos la caja de escaneo pequeña
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), // Caja de escaneo adaptativa
             videoConstraints: {
-                // CLAVE: Usamos la restricción estricta de ambiente para forzar la cámara trasera,
-                // pero ya no pedimos resoluciones fijas para evitar el OverconstrainedError.
+                // 1. FORZAR CÁMARA TRASERA: Usamos la restricción estricta de ambiente ('environment').
+                // Esto anulará cualquier cámara frontal seleccionada por error.
                 facingMode: { exact: "environment" },
                 
-                // ¡IMPORTANTE! Se eliminan las líneas de width/height ideal para resolver el fallo
-                // El navegador usará la mejor resolución disponible por defecto.
+                // 2. RESOLUCIÓN: Establecemos resolución ideal para mantener la calidad de escaneo.
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                
+                // 3. ENFOQUE: Hemos ELIMINADO la restricción 'focusMode' para permitir que el
+                // enfoque automático nativo del dispositivo (macro) funcione correctamente al acercar.
             }
         };
 
         html5QrCode = new Html5Qrcode("reader");
         try {
+            // El cameraId (ID del dispositivo) se pasa aquí para seleccionar la cámara.
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
             console.error("Error al iniciar la cámara:", err);
-            // Mensaje de error simplificado
-            Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Por favor, utiliza la entrada manual.', 'error');
+            
+            if (String(err).includes('OverconstrainedError')) {
+                // Si aún falla por Overconstrained, es probable que la resolución sea el problema.
+                 Swal.fire('Atención', 'El dispositivo no soporta la resolución de cámara solicitada. Intenta reiniciar la aplicación o utiliza la entrada manual.', 'error');
+            } else {
+                 Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
+            }
         }
     };
-
     const initializeCamera = async () => {
         try {
             cameras = await Html5Qrcode.getCameras();
