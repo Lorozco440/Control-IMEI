@@ -54,25 +54,28 @@ document.addEventListener('DOMContentLoaded', () => {
    const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         
-        // --- CORRECCIÓN: ELIMINAR LA RESTRICCIÓN FACINGMODE ---
+        // --- SOLUCIÓN PARA HABILITAR EL BOTÓN DE CAMBIO ---
         const config = {
             fps: 10,
-            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }),
+            // Valor de altura reducida
+            qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), 
             videoConstraints: {
-                // ELIMINAMOS facingMode: { exact: "environment" } para permitir que
-                // el botón de cambio de cámara seleccione cualquier ID de cámara.
+                // CLAVE: Reintroducimos deviceId para que el navegador use el ID
+                // exacto que le pasamos (el ID de la cámara seleccionada por el botón).
+                deviceId: { exact: cameraId },
                 
-                // RESOLUCIÓN (Mantenemos la calidad de escaneo)
+                // RESOLUCIÓN (mantenemos la calidad de escaneo)
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
+                
+                // Se excluye facingMode y focusMode para evitar conflictos y mantener el enfoque nativo.
             }
         };
-        // --- FIN DE LA CORRECCIÓN ---
+        // --- FIN DE LA SOLUCIÓN ---
 
         html5QrCode = new Html5Qrcode("reader");
         try {
-            // html5QrCode.start() ahora usará el cameraId (ID del dispositivo) 
-            // que le pasemos para seleccionar la cámara.
+            // html5QrCode.start() usa el cameraId que le pasa la función de cambio.
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
             console.error("Error al iniciar la cámara:", err);
@@ -82,24 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                  Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
             }
-        }
-    };
-    const initializeCamera = async () => {
-        try {
-            cameras = await Html5Qrcode.getCameras();
-            if (cameras && cameras.length) {
-                const rearCamera = cameras.find(camera => camera.label.toLowerCase().includes('back') || camera.label.toLowerCase().includes('rear') || camera.label.toLowerCase().includes('trasera'));
-                if (cameras.length > 1) {
-                    switchCameraBtn.style.display = 'flex';
-                }
-                currentCameraId = rearCamera ? rearCamera.id : cameras[0].id;
-                startScanner(currentCameraId);
-            } else {
-                Swal.fire('Sin Cámaras', 'No se encontraron cámaras en este dispositivo.', 'error');
-            }
-        } catch (err) {
-            console.error("Fallo al obtener cámaras:", err);
-            Swal.fire('Error de Permisos', 'No se pudo acceder a las cámaras. Por favor, concede los permisos necesarios.', 'error');
         }
     };
     
