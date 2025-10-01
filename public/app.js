@@ -61,21 +61,19 @@ document.addEventListener('DOMContentLoaded', () => {
             // **CORRECCIÓN CLAVE:** Usamos deviceId para forzar la cámara sin conflicto 
             // con las propiedades avanzadas, solucionando el problema de inicialización.
             videoConstraints: {
-                deviceId: { exact: cameraId },
-                advanced: [{ 
-                    // Mantenemos el enfoque continuo para la mejora del escaneo
-                    focusMode: "continuous" 
-                }]
+                 focusMode: "continuous",
             }
         };
 
         html5QrCode = new Html5Qrcode("reader");
         try {
+            // El cameraId (ID del dispositivo) se pasa aquí para seleccionar la cámara.
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
             console.error("Error al iniciar la cámara:", err);
-            // Manejo de errores más específico para ayudar al usuario
+            // Mantenemos el manejo de errores mejorado para diagnóstico
             if (String(err).includes('OverconstrainedError') || String(err).includes('NotAllowedError')) {
+                // Este error ocurre si el dispositivo no soporta 'focusMode: "continuous"'
                  Swal.fire('Error de Permisos', 'La configuración avanzada de la cámara falló. Asegúrate de que tu navegador/dispositivo soporte "Enfoque Continuo". Si el problema persiste, intenta reiniciar la aplicación.', 'error');
             } else {
                  Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
