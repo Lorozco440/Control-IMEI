@@ -53,6 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
    // lorozco440/control-imei/Control-IMEI-d7d3f0b4a4ec21a312b288eb89eae09a589d9c43/public/app.js (Modificación en startScanner)
 
+    // lorozco440/control-imei/Control-IMEI-d7d3f0b4a4ec21a312b288eb89eae09a589d9c43/public/app.js (Modificación en startScanner)
+
     const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         
@@ -79,21 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
             Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Por favor, utiliza la entrada manual.', 'error');
         }
     };
-        html5QrCode = new Html5Qrcode("reader");
-        try {
-            // El cameraId (ID del dispositivo) se pasa aquí para seleccionar la cámara.
-            await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
-        } catch (err) {
-            console.error("Error al iniciar la cámara:", err);
-            
-            if (String(err).includes('OverconstrainedError')) {
-                // Si aún falla por Overconstrained, es probable que la resolución sea el problema.
-                 Swal.fire('Atención', 'El dispositivo no soporta la resolución de cámara solicitada. Intenta reiniciar la aplicación o utiliza la entrada manual.', 'error');
-            } else {
-                 Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
-            }
-        }
-    };
+
     const initializeCamera = async () => {
         try {
             cameras = await Html5Qrcode.getCameras();
