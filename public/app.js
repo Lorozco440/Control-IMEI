@@ -54,37 +54,34 @@ document.addEventListener('DOMContentLoaded', () => {
    const startScanner = async (cameraId) => {
         await stopCurrentScanner();
         
-        // --- SOLUCIÓN PARA HABILITAR EL BOTÓN DE CAMBIO ---
+        // --- SOLUCIÓN: MAXIMIZAR ESTABILIDAD Y HABILITAR EL CAMBIO DE CÁMARA ---
         const config = {
             fps: 10,
-            // Valor de altura reducida
+            // Altura reducida
             qrbox: (w, h) => ({ width: w * 0.9, height: h * 0.25 }), 
             videoConstraints: {
-                // CLAVE: Reintroducimos deviceId para que el navegador use el ID
-                // exacto que le pasamos (el ID de la cámara seleccionada por el botón).
-                deviceId: { exact: cameraId },
+                // CLAVE: Usamos el ID de la cámara directamente. 
+                // Esto es la forma más estable de alternar entre cámaras (deviceID) 
+                // sin el riesgo de OverconstrainedError.
+                deviceId: cameraId, 
                 
-                // RESOLUCIÓN (mantenemos la calidad de escaneo)
+                // Mantenemos la resolución ideal para la calidad de escaneo
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
                 
-                // Se excluye facingMode y focusMode para evitar conflictos y mantener el enfoque nativo.
+                // Eliminamos facingMode y focusMode para mantener el enfoque nativo.
             }
         };
-        // --- FIN DE LA SOLUCIÓN ---
+        // --- FIN DE LA CORRECCIÓN ---
 
         html5QrCode = new Html5Qrcode("reader");
         try {
-            // html5QrCode.start() usa el cameraId que le pasa la función de cambio.
+            // html5QrCode.start() utiliza el cameraId pasado para seleccionar el dispositivo
             await html5QrCode.start(cameraId, config, onScanSuccess, (errorMessage) => {});
         } catch (err) {
-            console.error("Error al iniciar la cámara:", err);
-            
-            if (String(err).includes('OverconstrainedError')) {
-                 Swal.fire('Atención', 'El dispositivo no soporta la resolución de cámara solicitada. Intenta reiniciar la aplicación o utiliza la entrada manual.', 'error');
-            } else {
-                 Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Asegúrate de haber dado los permisos.', 'error');
-            }
+            // Manejo de errores simple y NO bloqueante para que el resto de la app cargue.
+            console.error("Error al iniciar la cámara. La aplicación continuará cargando:", err);
+            Swal.fire('Error de Cámara', 'No se pudo iniciar la cámara. Esto puede ser por falta de permisos o un conflicto de resolución. Por favor, utiliza la entrada manual.', 'error');
         }
     };
     
